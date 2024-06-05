@@ -1,9 +1,15 @@
 import 'pixi-spine';
 
-import { Application, Assets } from 'pixi.js';
+import { Application, Assets, BatchRenderer, Sprite, extensions } from 'pixi.js';
 
+import { BlendModesBatchRenderer } from '@enea-entertainment/pixi-blend-modes-batch';
+import type { Renderer } from 'pixi.js';
 import { Spine } from '@pixi-spine/runtime-4.1';
 import { TranscoderWorker } from '@pixi/basis';
+
+extensions.remove(BatchRenderer);
+BlendModesBatchRenderer.extension.name = 'batch';
+extensions.add(BlendModesBatchRenderer);
 
 let now = performance.now();
 let then = now;
@@ -23,8 +29,10 @@ async function main()
 
     Assets.add({ alias: 'png', src: 'spine/spineboy-png.skel', data: { spineSkeletonScale: 0.5 } });
     Assets.add({ alias: 'basis', src: 'spine/spineboy-basis.skel', data: { spineSkeletonScale: 0.5 } });
+    Assets.add({ alias: 's1', src: 'spine/spineboy-png.png' });
+    Assets.add({ alias: 's2', src: 'spine/spineboy-basis.basis' });
 
-    await Assets.load(['png', 'basis']);
+    await Assets.load(['png', 'basis', 's1', 's2']);
 
     const png = getSpine('png');
 
@@ -40,6 +48,22 @@ async function main()
 
     app.stage.addChild(basis);
 
+    const s1 = getSprite('s1');
+
+    s1.position.copyFrom(png.position);
+
+    app.stage.addChild(s1);
+
+    const s2 = getSprite('s2');
+
+    s2.position.copyFrom(basis.position);
+
+    app.stage.addChild(s2);
+
+    const r = app.renderer as Renderer;
+
+    console.warn(r.texture.managedTextures);
+
     app.ticker.add(() =>
     {
         now = performance.now();
@@ -51,6 +75,17 @@ async function main()
 
         then = now;
     });
+}
+
+function getSprite(textureName: string): Sprite
+{
+    const sprite = new Sprite(Assets.get(textureName));
+
+    sprite.anchor.set(0.5);
+    sprite.scale.set(0.5);
+    sprite.blendMode = 1;
+
+    return sprite;
 }
 
 function getSpine(skeleton: string)
